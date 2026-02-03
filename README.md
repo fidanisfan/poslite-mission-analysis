@@ -14,9 +14,9 @@ I structured the project by separating technical cleaning from analytics outputs
 
 ## 3. Data Quality Findings
 
-Yes. I found several data quality issues that require cleaning before analysis. Campaign IDs were inconsistently formatted (e.g. numeric values with a .0 suffix), and campaign names contained extra spaces and casing inconsistencies, which caused duplicate groupings. In the staging layer, I normalized data types and column formats to create a reliable foundation for modeling. Other notable issues were many Null values in Campaign ID column and one record which had 10000 Items ordered with 0 Orders which seems to be a wrong data entry. I also observed missing values and zero denominators in funnel metrics, which could lead to misleading KPIs if not handled carefully. These issues were addressed in the staging layer to ensure reliable aggregation and reporting.
+3.1 Yes. I found several data quality issues that require cleaning before analysis. Campaign IDs were inconsistently formatted (e.g. numeric values with a .0 suffix), and campaign names contained extra spaces and casing inconsistencies, which caused duplicate groupings. In the staging layer, I normalized data types and column formats to create a reliable foundation for modeling. Other notable issues were many Null values in Campaign ID column and one record which had 10000 Items ordered with 0 Orders which seems to be a wrong data entry. I also observed missing values and zero denominators in funnel metrics, which could lead to misleading KPIs if not handled carefully. These issues were addressed in the staging layer to ensure reliable aggregation and reporting.
 
-The marketing team could benefit from focusing more on lead quality rather than just lead volume. Optimizing campaigns based on downstream metrics like cost per deal and conversion to deals, and working more closely with sales on lead quality definitions, would likely improve overall performance. At the same time, they should avoid scaling channels that generate cheap leads but result in long sales cycles or low deal conversion, as this can hurt revenue efficiency.
+3.2 The marketing team could benefit from focusing more on lead quality rather than just lead volume. Optimizing campaigns based on downstream metrics like cost per deal and conversion to deals, and working more closely with sales on lead quality definitions, would likely improve overall performance. At the same time, they should avoid scaling channels that generate cheap leads but result in long sales cycles or low deal conversion, as this can hurt revenue efficiency.
 
 ## 4. Dashboard Proposal
 
@@ -24,3 +24,9 @@ The marketing team could benefit from focusing more on lead quality rather than 
 
 
 ## 5. AI Tooling Reflection
+
+5.1 I used AI tools (ChatGPT, Gemini) to support the task by helping structure the data pipeline, draft and refine SQL transformations, and validate KPI definitions. All outputs were reviewed and adjusted manually to ensure correctness and alignment with the dataset and business context.
+
+5.2 In one case, the AI suggested an overly complex data model with additional layers that were unnecessary for the scope of this project. I simplified the setup to a staging and mart structure, which better matched the data size and made the solution clearer and easier to maintain.
+
+5.3 Workflow automation and AI could add value by automating data quality checks, detecting anomalies in funnel metrics, and assisting with campaign classification. AI-generated summaries of dashboard insights could also help stakeholders quickly understand performance without deep manual analysis.
