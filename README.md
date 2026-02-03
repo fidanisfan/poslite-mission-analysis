@@ -20,8 +20,7 @@ I structured the project by separating technical cleaning from analytics outputs
 
 ## 4. Dashboard Proposal
 
-<img width="784" height="598" alt="Screenshot 2026-02-03 at 07 15 08" src="https://github.com/user-attachments/assets/0964291a-072f-45a5-a171-1a542ca03066" />
-
+<img width="780" height="597" alt="Screenshot 2026-02-03 at 07 40 34" src="https://github.com/user-attachments/assets/69a92f53-1bfc-4871-9915-3f30635329d7" />
 
 ## 5. AI Tooling Reflection
 
