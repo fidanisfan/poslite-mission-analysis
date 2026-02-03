@@ -1,6 +1,6 @@
 RAW  →  STAGE (clean&normalize)  →  MART (dashboard-ready)
 
-## Assumtion: The three source datasets are already available in the data warehouse as raw tables (RAW.WEB_ORDERS, RAW.CHANNELS, RAW.LEADS_FUNNEL).
+## Assumtion: The three source datasets are already available in the data warehouse as raw tables (RAW.WEB_ORDERS, RAW.CHANNELS, RAW.LEADS_FUNNEL). 
 
 CREATE OR REPLACE TABLE MART.CAMPAIGN_WEB_DAILY AS
 SELECT
@@ -65,8 +65,7 @@ SELECT
     CASE
       WHEN SUM(LF.TOTAL_SPEND) = 0 THEN NULL
       ELSE SUM(LF.TOTAL_SPEND)::FLOAT / NULLIF(SUM(LF.TOTAL_LEADS), 0)
-    END                                     AS COST_PER_LEAD
-
+    END AS COST_PER_LEAD
 FROM STG.LEADS_FUNNEL LF
 LEFT JOIN STG.CAMPAIGNS C
   ON LF.CAMPAIGN_ID = C.CAMPAIGN_ID
@@ -111,28 +110,28 @@ FROM RAW.CHANNELS;
 
 CREATE OR REPLACE TABLE STG.LEADS_FUNNEL AS
 SELECT
-    TRY_TO_DATE(DATE)                                       AS FUNNEL_DATE,
-    UPPER(TRIM(COUNTRY_CODE))                               AS COUNTRY_CODE,
-    SPLIT_PART(TRIM(CAMPAIGN_ID), '.', 1)                   AS CAMPAIGN_ID,
+    TRY_TO_DATE(DATE) AS FUNNEL_DATE,
+    UPPER(TRIM(COUNTRY_CODE)) AS COUNTRY_CODE,
+    SPLIT_PART(TRIM(CAMPAIGN_ID), '.', 1) AS CAMPAIGN_ID,
     LOWER(
         TRIM(
             REGEXP_REPLACE(CAMPAIGN_NAME, '\\s+', ' ')
         )
-    )                                                       AS CAMPAIGN_NAME,
-    TRIM(CURRENCY)                                          AS CURRENCY,
-    TRIM(PRODUCT)                                           AS PRODUCT,
-    TRIM(CHANNEL_3)                                         AS CHANNEL_3,
-    TRIM(CHANNEL_4)                                         AS CHANNEL_4,
-    TRIM(CHANNEL_5)                                         AS CHANNEL_5,
-    TRY_TO_NUMBER(TOTAL_IMPRESSIONS)                        AS TOTAL_IMPRESSIONS,
-    TRY_TO_NUMBER(TOTAL_CLICKS)                             AS TOTAL_CLICKS,
-    TRY_TO_DECIMAL(TOTAL_SPEND, 18, 2)                      AS TOTAL_SPEND,
-    TRY_TO_NUMBER(TOTAL_LEADS)                              AS TOTAL_LEADS,
-    TRY_TO_NUMBER(TOTAL_FAKE_LEADS)                         AS TOTAL_FAKE_LEADS,
-    TRY_TO_NUMBER(TOTAL_SQLS)                               AS TOTAL_SQLS,
-    TRY_TO_NUMBER(TOTAL_MEETING_DONE)                       AS TOTAL_MEETING_DONE,
-    TRY_TO_NUMBER(TOTAL_SIGNED_LEADS)                       AS TOTAL_SIGNED_LEADS,
-    TRY_TO_NUMBER(TOTAL_POS_LITE_DEALS)                     AS TOTAL_POS_LITE_DEALS
+    ) AS CAMPAIGN_NAME,
+    TRIM(CURRENCY) AS CURRENCY,
+    TRIM(PRODUCT) AS PRODUCT,
+    TRIM(CHANNEL_3) AS CHANNEL_3,
+    TRIM(CHANNEL_4) AS CHANNEL_4,
+    TRIM(CHANNEL_5) AS CHANNEL_5,
+    TRY_TO_NUMBER(TOTAL_IMPRESSIONS) AS TOTAL_IMPRESSIONS,
+    TRY_TO_NUMBER(TOTAL_CLICKS) AS TOTAL_CLICKS,
+    TRY_TO_DECIMAL(TOTAL_SPEND, 18, 2) AS TOTAL_SPEND,
+    TRY_TO_NUMBER(TOTAL_LEADS) AS TOTAL_LEADS,
+    TRY_TO_NUMBER(TOTAL_FAKE_LEADS) AS TOTAL_FAKE_LEADS,
+    TRY_TO_NUMBER(TOTAL_SQLS) AS TOTAL_SQLS,
+    TRY_TO_NUMBER(TOTAL_MEETING_DONE) AS TOTAL_MEETING_DONE,
+    TRY_TO_NUMBER(TOTAL_SIGNED_LEADS) AS TOTAL_SIGNED_LEADS,
+    TRY_TO_NUMBER(TOTAL_POS_LITE_DEALS) AS TOTAL_POS_LITE_DEALS
 FROM RAW.LEADS_FUNNEL;
 
 
