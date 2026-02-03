@@ -1,56 +1,138 @@
+RAW  →  STAGE (clean&normalize)  →  MART (dashboard-ready)
+
+## Assumtion: The three source datasets are already available in the data warehouse as raw tables (RAW.WEB_ORDERS, RAW.CHANNELS, RAW.LEADS_FUNNEL).
+
+CREATE OR REPLACE TABLE MART.CAMPAIGN_WEB_DAILY AS
+SELECT
+    wo.DATE AS DATE,
+    wo.COUNTRY_CODE,
+    wo.CAMPAIGN_ID,
+    c.CAMPAIGN_NAME,
+    c.CHANNEL_3,
+    c.CHANNEL_4,
+    c.CHANNEL_5,
+    SUM(wo.TOTAL_SPEND_EUR) AS TOTAL_SPEND_EUR,
+    SUM(wo.NB_OF_SESSIONS) AS SESSIONS,
+    SUM(wo.NB_OF_SIGNUPS) AS SIGNUPS,
+    SUM(wo.NB_OF_ORDERS) AS ORDERS,
+    SUM(wo.NB_OF_POSLITE_ITEMS_ORDERED) AS ITEMS_ORDERED
+FROM STG.WEB_ORDERS wo
+LEFT JOIN STG.CAMPAIGNS c
+  ON wo.CAMPAIGN_ID = c.CAMPAIGN_ID
+GROUP BY
+    wo.DATE,
+    wo.COUNTRY_CODE,
+    wo.CAMPAIGN_ID,
+    c.CAMPAIGN_NAME,
+    c.CHANNEL_3,
+    c.CHANNEL_4,
+    c.CHANNEL_5;
+
+
+CREATE OR REPLACE TABLE MART.LEADS_FUNNEL_DAILY AS
+SELECT
+    LF.FUNNEL_DATE AS DATE,
+    LF.COUNTRY_CODE,
+    LF.CAMPAIGN_ID,
+    C.CAMPAIGN_NAME,
+    C.CHANNEL_3,
+    C.CHANNEL_4,
+    C.CHANNEL_5,
+    SUM(LF.TOTAL_IMPRESSIONS) AS IMPRESSIONS,
+    SUM(LF.TOTAL_CLICKS) AS CLICKS,
+    SUM(LF.TOTAL_SPEND) AS SPEND,
+    SUM(LF.TOTAL_LEADS) AS LEADS,
+    SUM(LF.TOTAL_FAKE_LEADS) AS FAKE_LEADS,
+    SUM(LF.TOTAL_SQLS) AS SQLS,
+    SUM(LF.TOTAL_MEETING_DONE) AS MEETINGS,
+    SUM(LF.TOTAL_SIGNED_LEADS) AS SIGNED_LEADS,
+    SUM(LF.TOTAL_POS_LITE_DEALS) AS DEALS,
+    CASE 
+      WHEN SUM(LF.TOTAL_IMPRESSIONS) = 0 THEN NULL
+      ELSE SUM(LF.TOTAL_CLICKS)::FLOAT / SUM(LF.TOTAL_IMPRESSIONS)
+    END                                     AS CTR,
+
+    CASE
+      WHEN SUM(LF.TOTAL_CLICKS) = 0 THEN NULL
+      ELSE SUM(LF.TOTAL_LEADS)::FLOAT / SUM(LF.TOTAL_CLICKS)
+    END                                     AS CLICK_TO_LEAD_RATE,
+
+    CASE
+      WHEN SUM(LF.TOTAL_LEADS) = 0 THEN NULL
+      ELSE SUM(LF.TOTAL_SQLS)::FLOAT / SUM(LF.TOTAL_LEADS)
+    END                                     AS LEAD_TO_SQL_RATE,
+
+    CASE
+      WHEN SUM(LF.TOTAL_SPEND) = 0 THEN NULL
+      ELSE SUM(LF.TOTAL_SPEND)::FLOAT / NULLIF(SUM(LF.TOTAL_LEADS), 0)
+    END                                     AS COST_PER_LEAD
+
+FROM STG.LEADS_FUNNEL LF
+LEFT JOIN STG.CAMPAIGNS C
+  ON LF.CAMPAIGN_ID = C.CAMPAIGN_ID
+GROUP BY
+    LF.FUNNEL_DATE,
+    LF.COUNTRY_CODE,
+    LF.CAMPAIGN_ID,
+    C.CAMPAIGN_NAME,
+    C.CHANNEL_3,
+    C.CHANNEL_4,
+    C.CHANNEL_5;
+
+
+
 ## STAGING
 
-CREATE OR REPLACE TABLE stg_web_orders AS
+CREATE OR REPLACE TABLE STG.WEB_ORDERS AS
 SELECT
-    CAST(date AS DATE) AS date,
-    country_code,
-    campaign_id,
-    CAST(total_spend_eur AS FLOAT) AS total_spend_eur,
-    CAST(nb_of_sessions AS INTEGER) AS nb_of_sessions,
-    CAST(nb_of_signups AS INTEGER) AS nb_of_signups,
-    CAST(nb_of_orders AS INTEGER) AS nb_of_orders,
-    CAST(nb_of_poslite_items_ordered AS INTEGER) AS nb_of_poslite_items_ordered
-FROM stg.web_orders;
+    TRY_TO_DATE(DATE) AS DATE,
+    UPPER(TRIM(COUNTRY_CODE)) AS COUNTRY_CODE,
+    REGEXP_REPLACE(TRIM(CAMPAIGN_ID), '\\s+', '') AS CAMPAIGN_ID,
+    TRY_TO_DECIMAL(TOTAL_SPEND_EUR, 18, 2) AS TOTAL_SPEND_EUR,
+    TRY_TO_NUMBER(NB_OF_SESSIONS) AS NB_OF_SESSIONS,
+    TRY_TO_NUMBER(NB_OF_SIGNUPS) AS NB_OF_SIGNUPS,
+    TRY_TO_NUMBER(NB_OF_ORDERS) AS NB_OF_ORDERS,
+    TRY_TO_NUMBER(NB_OF_POSLITE_ITEMS_ORDERED) AS NB_OF_POSLITE_ITEMS_ORDERED
+FROM RAW.WEB_ORDERS;
 
-## MODELLING
 
-CREATE OR REPLACE TABLE web_orders_with_channels AS
+CREATE OR REPLACE TABLE STG.CAMPAIGNS AS
 SELECT
-    wo.date,
-    wo.country_code,
-    wo.campaign_id,
-    ch.campaign_name,
-    ch.campaign_period_budget_category,
-    ch.channel_3,
-    ch.channel_4,
-    ch.channel_5,
-    wo.total_spend_eur,
-    wo.nb_of_sessions,
-    wo.nb_of_signups,
-    wo.nb_of_orders,
-    wo.nb_of_poslite_items_ordered
-FROM stg_web_orders wo
-LEFT JOIN stg_channels ch
-    ON wo.campaign_id = ch.campaign_id;
-    
-## MART
+    REGEXP_REPLACE(TRIM(CAMPAIGN_ID), '\\s+', '') AS CAMPAIGN_ID,
+    LOWER(
+      TRIM(
+        REGEXP_REPLACE(CAMPAIGN_NAME, '\\s+', ' ')
+      )
+    ) AS CAMPAIGN_NAME,
+    CHANNEL_3,
+    CHANNEL_4,
+    CHANNEL_5
+FROM RAW.CHANNELS;
 
-CREATE OR REPLACE TABLE mart_web_funnel_daily AS
+CREATE OR REPLACE TABLE STG.LEADS_FUNNEL AS
 SELECT
-    date,
-    country_code,
-    campaign_id,
-    campaign_name,
-    campaign_period_budget_category,
-    channel_3,
-    channel_4,
-    channel_5,
-    SUM(total_spend_eur) AS marketing_spend_eur,
-    SUM(nb_of_sessions) AS sessions,
-    SUM(nb_of_orders) AS orders,
-    SUM(nb_of_poslite_items_ordered) AS poslite_items_ordered
-FROM web_orders_with_channels
-GROUP BY
-    date, country_code, campaign_id,
-    campaign_name, campaign_period_budget_category,
-    channel_3, channel_4, channel_5;
+    TRY_TO_DATE(DATE)                                       AS FUNNEL_DATE,
+    UPPER(TRIM(COUNTRY_CODE))                               AS COUNTRY_CODE,
+    SPLIT_PART(TRIM(CAMPAIGN_ID), '.', 1)                   AS CAMPAIGN_ID,
+    LOWER(
+        TRIM(
+            REGEXP_REPLACE(CAMPAIGN_NAME, '\\s+', ' ')
+        )
+    )                                                       AS CAMPAIGN_NAME,
+    TRIM(CURRENCY)                                          AS CURRENCY,
+    TRIM(PRODUCT)                                           AS PRODUCT,
+    TRIM(CHANNEL_3)                                         AS CHANNEL_3,
+    TRIM(CHANNEL_4)                                         AS CHANNEL_4,
+    TRIM(CHANNEL_5)                                         AS CHANNEL_5,
+    TRY_TO_NUMBER(TOTAL_IMPRESSIONS)                        AS TOTAL_IMPRESSIONS,
+    TRY_TO_NUMBER(TOTAL_CLICKS)                             AS TOTAL_CLICKS,
+    TRY_TO_DECIMAL(TOTAL_SPEND, 18, 2)                      AS TOTAL_SPEND,
+    TRY_TO_NUMBER(TOTAL_LEADS)                              AS TOTAL_LEADS,
+    TRY_TO_NUMBER(TOTAL_FAKE_LEADS)                         AS TOTAL_FAKE_LEADS,
+    TRY_TO_NUMBER(TOTAL_SQLS)                               AS TOTAL_SQLS,
+    TRY_TO_NUMBER(TOTAL_MEETING_DONE)                       AS TOTAL_MEETING_DONE,
+    TRY_TO_NUMBER(TOTAL_SIGNED_LEADS)                       AS TOTAL_SIGNED_LEADS,
+    TRY_TO_NUMBER(TOTAL_POS_LITE_DEALS)                     AS TOTAL_POS_LITE_DEALS
+FROM RAW.LEADS_FUNNEL;
+
+
