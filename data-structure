@@ -49,7 +49,7 @@ SELECT
     SUM(nb_of_sessions) AS sessions,
     SUM(nb_of_orders) AS orders,
     SUM(nb_of_poslite_items_ordered) AS poslite_items_ordered
-FROM int_web_orders_with_channels
+FROM web_orders_with_channels
 GROUP BY
     date, country_code, campaign_id,
     campaign_name, campaign_period_budget_category,
