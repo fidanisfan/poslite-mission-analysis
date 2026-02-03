@@ -1,0 +1,56 @@
+## STAGING
+
+CREATE OR REPLACE TABLE stg_web_orders AS
+SELECT
+    CAST(date AS DATE) AS date,
+    country_code,
+    campaign_id,
+    CAST(total_spend_eur AS FLOAT) AS total_spend_eur,
+    CAST(nb_of_sessions AS INTEGER) AS nb_of_sessions,
+    CAST(nb_of_signups AS INTEGER) AS nb_of_signups,
+    CAST(nb_of_orders AS INTEGER) AS nb_of_orders,
+    CAST(nb_of_poslite_items_ordered AS INTEGER) AS nb_of_poslite_items_ordered
+FROM stg.web_orders;
+
+## MODELLING
+
+CREATE OR REPLACE TABLE web_orders_with_channels AS
+SELECT
+    wo.date,
+    wo.country_code,
+    wo.campaign_id,
+    ch.campaign_name,
+    ch.campaign_period_budget_category,
+    ch.channel_3,
+    ch.channel_4,
+    ch.channel_5,
+    wo.total_spend_eur,
+    wo.nb_of_sessions,
+    wo.nb_of_signups,
+    wo.nb_of_orders,
+    wo.nb_of_poslite_items_ordered
+FROM stg_web_orders wo
+LEFT JOIN stg_channels ch
+    ON wo.campaign_id = ch.campaign_id;
+    
+## MART
+
+CREATE OR REPLACE TABLE mart_web_funnel_daily AS
+SELECT
+    date,
+    country_code,
+    campaign_id,
+    campaign_name,
+    campaign_period_budget_category,
+    channel_3,
+    channel_4,
+    channel_5,
+    SUM(total_spend_eur) AS marketing_spend_eur,
+    SUM(nb_of_sessions) AS sessions,
+    SUM(nb_of_orders) AS orders,
+    SUM(nb_of_poslite_items_ordered) AS poslite_items_ordered
+FROM int_web_orders_with_channels
+GROUP BY
+    date, country_code, campaign_id,
+    campaign_name, campaign_period_budget_category,
+    channel_3, channel_4, channel_5;
